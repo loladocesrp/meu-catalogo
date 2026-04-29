@@ -1,0 +1,634 @@
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Admin</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+
+<div class="admin-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">🛍️ Admin Panel</div>
+    <button class="sidebar-link ativo" onclick="trocarTab('produtos')">
+      <span class="icone">📦</span> Produtos
+    </button>
+    <button class="sidebar-link" onclick="trocarTab('pedidos')">
+      <span class="icone">🛒</span> Pedidos
+    </button>
+    <button class="sidebar-link" onclick="trocarTab('clientes')">
+      <span class="icone">👥</span> Clientes
+    </button>
+    <button class="sidebar-link" onclick="trocarTab('dashboard')">
+      <span class="icone">📊</span> Dashboard
+    </button>
+    <div style="flex:1"></div>
+    <a href="../index.html" class="sidebar-link" target="_blank">
+      <span class="icone">🌐</span> Ver Site
+    </a>
+    <button class="sidebar-link" onclick="adminLogout()" style="color:#f88">
+      <span class="icone">🚪</span> Sair
+    </button>
+  </aside>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="admin-main">
+
+    <!-- ===== TAB: DASHBOARD ===== -->
+    <div id="tab-dashboard" class="tab-painel">
+      <div class="admin-topbar">
+        <h1>📊 Dashboard</h1>
+      </div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="numero" id="stat-produtos">—</div><div class="label">Produtos ativos</div></div>
+        <div class="stat-card"><div class="numero" id="stat-pedidos">—</div><div class="label">Total de pedidos</div></div>
+        <div class="stat-card"><div class="numero" id="stat-clientes">—</div><div class="label">Clientes cadastrados</div></div>
+        <div class="stat-card"><div class="numero" id="stat-faturamento">—</div><div class="label">Faturamento total</div></div>
+      </div>
+      <div style="background:white;border-radius:var(--radius);padding:1.5rem;box-shadow:var(--sombra)">
+        <h3 style="margin-bottom:1rem;color:var(--cor-secundaria)">🕐 Últimos Pedidos</h3>
+        <div id="ultimos-pedidos"></div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: PRODUTOS ===== -->
+    <div id="tab-produtos" class="tab-painel ativo">
+      <div class="admin-topbar">
+        <h1>📦 Produtos</h1>
+        <button class="btn btn-primario" onclick="abrirFormProduto()">
+          + Novo Produto
+        </button>
+      </div>
+
+      <div id="alerta-prod" class="alerta"></div>
+
+      <!-- Busca de produtos na grade admin -->
+      <div style="margin-bottom:1rem">
+        <input type="search" class="busca-input" style="max-width:300px"
+          placeholder="Buscar produto..." oninput="filtrarProdutosAdmin(this.value)"/>
+      </div>
+
+      <div class="tabela-wrapper">
+        <table id="tabela-produtos">
+          <thead>
+            <tr>
+              <th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th>
+              <th>Estoque</th><th>Status</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-produtos">
+            <tr><td colspan="7" style="text-align:center;padding:2rem">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== TAB: PEDIDOS ===== -->
+    <div id="tab-pedidos" class="tab-painel">
+      <div class="admin-topbar">
+        <h1>🛒 Pedidos</h1>
+        <select class="filtro-select" id="filtro-status-pedido" onchange="filtrarPedidos()">
+          <option value="">Todos os status</option>
+          <option>Novo</option>
+          <option>Preparando</option>
+          <option>Saiu para entrega</option>
+          <option>Entregue</option>
+          <option>Cancelado</option>
+        </select>
+      </div>
+      <div class="tabela-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#Pedido</th><th>Cliente</th><th>Telefone</th><th>Itens</th>
+              <th>Total</th><th>Pagamento</th><th>Data</th><th>Status</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pedidos">
+            <tr><td colspan="9" style="text-align:center;padding:2rem">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== TAB: CLIENTES ===== -->
+    <div id="tab-clientes" class="tab-painel">
+      <div class="admin-topbar">
+        <h1>👥 Clientes</h1>
+        <input type="search" class="busca-input" style="max-width:280px"
+          placeholder="Buscar cliente..." oninput="filtrarClientes(this.value)"/>
+      </div>
+      <div class="tabela-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th><th>E-mail</th><th>Telefone</th>
+              <th>CPF</th><th>Cidade</th><th>Cadastro</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-clientes">
+            <tr><td colspan="6" style="text-align:center;padding:2rem">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== MODAL: FORM PRODUTO ===== -->
+<div class="modal-overlay" id="modal-produto-form">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h2 id="titulo-form-produto">Novo Produto</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-produto-form')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div id="alerta-form-prod" class="alerta"></div>
+      <form onsubmit="salvarFormProduto(event)">
+        <input type="hidden" id="prod-id"/>
+        <div class="form-grupo">
+          <label>Nome do Produto *</label>
+          <input type="text" id="prod-nome" required placeholder="Ex: Pizza Margherita"/>
+        </div>
+        <div class="form-grupo">
+          <label>Descrição</label>
+          <textarea id="prod-desc" placeholder="Descreva o produto..."></textarea>
+        </div>
+        <div class="form-linha">
+          <div class="form-grupo">
+            <label>Preço (R$) *</label>
+            <input type="number" id="prod-preco" required min="0" step="0.01" placeholder="0,00"/>
+          </div>
+          <div class="form-grupo">
+            <label>Categoria</label>
+            <input type="text" id="prod-categoria" placeholder="Ex: Pizzas, Bebidas"/>
+          </div>
+        </div>
+        <div class="form-linha">
+          <div class="form-grupo">
+            <label>Estoque</label>
+            <input type="number" id="prod-estoque" min="0" value="0" placeholder="0"/>
+          </div>
+          <div class="form-grupo">
+            <label>Status</label>
+            <select id="prod-ativo">
+              <option value="sim">✅ Ativo</option>
+              <option value="nao">❌ Inativo</option>
+            </select>
+          </div>
+        </div>
+
+        <p style="font-weight:600;margin:.5rem 0;font-size:.88rem;color:var(--cor-secundaria)">
+          📸 Fotos (cole o link público do Google Drive ou qualquer URL de imagem)
+        </p>
+        <div class="form-grupo">
+          <label>Foto Principal (URL)</label>
+          <input type="url" id="prod-foto1" placeholder="https://..."/>
+        </div>
+        <div class="form-grupo">
+          <label>Foto 2 (opcional)</label>
+          <input type="url" id="prod-foto2" placeholder="https://..."/>
+        </div>
+        <div class="form-grupo">
+          <label>Foto 3 (opcional)</label>
+          <input type="url" id="prod-foto3" placeholder="https://..."/>
+        </div>
+
+        <div id="preview-fotos" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+
+        <div class="modal-footer" style="padding:0;border:none">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-produto-form')">Cancelar</button>
+          <button type="submit" class="btn btn-primario" id="btn-salvar-prod" data-texto="Salvar Produto">
+            Salvar Produto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: DETALHE PEDIDO ===== -->
+<div class="modal-overlay" id="modal-pedido-detalhe">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h2>📋 Detalhe do Pedido</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-pedido-detalhe')">×</button>
+    </div>
+    <div class="modal-corpo" id="conteudo-pedido-detalhe"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toasts"></div>
+
+<script src="../js/api.js"></script>
+<script>
+// ====================================================
+// VERIFICAR AUTH
+// ====================================================
+if (!adminLogado()) window.location.href = 'login.html';
+
+// ====================================================
+// DADOS GLOBAIS
+// ====================================================
+let todosProdutos = [];
+let todosPedidos  = [];
+let todosClientes = [];
+
+// ====================================================
+// TABS
+// ====================================================
+function trocarTab(nome) {
+  document.querySelectorAll('.tab-painel').forEach(t => t.classList.remove('ativo'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('ativo'));
+  document.getElementById('tab-' + nome).classList.add('ativo');
+  event.currentTarget.classList.add('ativo');
+
+  if (nome === 'produtos'   && todosProdutos.length === 0)  carregarProdutosAdmin();
+  if (nome === 'pedidos'    && todosPedidos.length  === 0)  carregarPedidosAdmin();
+  if (nome === 'clientes'   && todosClientes.length === 0)  carregarClientesAdmin();
+  if (nome === 'dashboard')                                  carregarDashboard();
+}
+
+// ====================================================
+// INICIALIZAÇÃO
+// ====================================================
+document.addEventListener('DOMContentLoaded', () => {
+  carregarProdutosAdmin();
+
+  // Preview de fotos em tempo real
+  ['prod-foto1','prod-foto2','prod-foto3'].forEach(id => {
+    document.getElementById(id).addEventListener('input', previewFotos);
+  });
+});
+
+// ====================================================
+// PRODUTOS
+// ====================================================
+async function carregarProdutosAdmin() {
+  const res = await buscarProdutos();
+  if (!res.sucesso) return;
+
+  // Busca todos incluindo inativos — para isso chamamos a lista geral
+  // (o Apps Script retorna só ativos; para uma lista completa, crie
+  //  uma action "listaTodosProdutos" com token de admin se desejar)
+  todosProdutos = res.produtos || [];
+  renderizarTabelaProdutos(todosProdutos);
+}
+
+function renderizarTabelaProdutos(lista) {
+  const tbody = document.getElementById('tbody-produtos');
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--cor-cinza)">
+      Nenhum produto cadastrado.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(p => `
+    <tr>
+      <td><img src="${p.foto1 || ''}" style="width:48px;height:48px;object-fit:cover;border-radius:6px" onerror="this.style.display='none'"/></td>
+      <td><strong>${p.nome}</strong></td>
+      <td><span class="badge badge-novo">${p.categoria || '—'}</span></td>
+      <td>${formatarMoeda(p.preco)}</td>
+      <td>${p.estoque || 0}</td>
+      <td><span class="badge ${p.ativo === 'sim' ? 'badge-entregue' : 'badge-cancelado'}">${p.ativo === 'sim' ? 'Ativo' : 'Inativo'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-aviso btn-sm" onclick="editarProdutoForm('${p.id}')">✏️ Editar</button>
+        <button class="btn btn-perigo btn-sm" onclick="confirmarExcluir('${p.id}', '${p.nome}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filtrarProdutosAdmin(termo) {
+  const lista = todosProdutos.filter(p =>
+    p.nome.toLowerCase().includes(termo.toLowerCase()) ||
+    (p.categoria || '').toLowerCase().includes(termo.toLowerCase())
+  );
+  renderizarTabelaProdutos(lista);
+}
+
+function abrirFormProduto() {
+  document.getElementById('titulo-form-produto').textContent = '+ Novo Produto';
+  document.getElementById('prod-id').value        = '';
+  document.getElementById('prod-nome').value      = '';
+  document.getElementById('prod-desc').value      = '';
+  document.getElementById('prod-preco').value     = '';
+  document.getElementById('prod-categoria').value = '';
+  document.getElementById('prod-estoque').value   = 0;
+  document.getElementById('prod-ativo').value     = 'sim';
+  document.getElementById('prod-foto1').value     = '';
+  document.getElementById('prod-foto2').value     = '';
+  document.getElementById('prod-foto3').value     = '';
+  document.getElementById('preview-fotos').innerHTML = '';
+  document.getElementById('alerta-form-prod').style.display = 'none';
+  abrirModal('modal-produto-form');
+}
+
+function editarProdutoForm(id) {
+  const p = todosProdutos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('titulo-form-produto').textContent = '✏️ Editar Produto';
+  document.getElementById('prod-id').value        = p.id;
+  document.getElementById('prod-nome').value      = p.nome;
+  document.getElementById('prod-desc').value      = p.descricao || '';
+  document.getElementById('prod-preco').value     = p.preco;
+  document.getElementById('prod-categoria').value = p.categoria || '';
+  document.getElementById('prod-estoque').value   = p.estoque   || 0;
+  document.getElementById('prod-ativo').value     = p.ativo     || 'sim';
+  document.getElementById('prod-foto1').value     = p.foto1     || '';
+  document.getElementById('prod-foto2').value     = p.foto2     || '';
+  document.getElementById('prod-foto3').value     = p.foto3     || '';
+  previewFotos();
+  abrirModal('modal-produto-form');
+}
+
+function previewFotos() {
+  const urls = [
+    document.getElementById('prod-foto1').value,
+    document.getElementById('prod-foto2').value,
+    document.getElementById('prod-foto3').value
+  ].filter(Boolean);
+
+  document.getElementById('preview-fotos').innerHTML = urls.map(u =>
+    `<img src="${u}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid var(--cor-borda)"
+      onerror="this.style.opacity='.3'" title="${u}"/>`
+  ).join('');
+}
+
+async function salvarFormProduto(e) {
+  e.preventDefault();
+  mostrarCarregando(true, 'btn-salvar-prod');
+
+  const produto = {
+    id:        document.getElementById('prod-id').value,
+    nome:      document.getElementById('prod-nome').value,
+    descricao: document.getElementById('prod-desc').value,
+    preco:     parseFloat(document.getElementById('prod-preco').value),
+    categoria: document.getElementById('prod-categoria').value,
+    estoque:   parseInt(document.getElementById('prod-estoque').value) || 0,
+    ativo:     document.getElementById('prod-ativo').value,
+    foto1:     document.getElementById('prod-foto1').value,
+    foto2:     document.getElementById('prod-foto2').value,
+    foto3:     document.getElementById('prod-foto3').value
+  };
+
+  const res = produto.id
+    ? await editarProduto(produto)
+    : await salvarProduto(produto);
+
+  mostrarCarregando(false, 'btn-salvar-prod');
+
+  if (res.sucesso) {
+    fecharModal('modal-produto-form');
+    toast('✅ ' + res.msg, 'sucesso');
+    todosProdutos = []; // força reload
+    await carregarProdutosAdmin();
+  } else {
+    mostrarAlerta(res.msg, 'erro', 'alerta-form-prod');
+  }
+}
+
+function confirmarExcluir(id, nome) {
+  if (!confirm('Desativar o produto "' + nome + '"?\nEle não aparecerá no catálogo.')) return;
+  excluirProd(id, nome);
+}
+
+async function excluirProd(id, nome) {
+  const res = await excluirProduto(id);
+  if (res.sucesso) {
+    toast('🗑️ ' + nome + ' desativado.', 'aviso');
+    todosProdutos = [];
+    carregarProdutosAdmin();
+  } else {
+    toast(res.msg, 'erro');
+  }
+}
+
+// ====================================================
+// PEDIDOS
+// ====================================================
+const BADGES_STATUS = {
+  'Novo':              'badge-novo',
+  'Preparando':        'badge-preparando',
+  'Saiu para entrega': 'badge-saiu',
+  'Entregue':          'badge-entregue',
+  'Cancelado':         'badge-cancelado'
+};
+
+async function carregarPedidosAdmin() {
+  const res = await listarPedidosAdmin();
+  if (!res.sucesso) { toast(res.msg, 'erro'); return; }
+  todosPedidos = res.pedidos || [];
+  renderizarTabelaPedidos(todosPedidos);
+}
+
+function renderizarTabelaPedidos(lista) {
+  const tbody = document.getElementById('tbody-pedidos');
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--cor-cinza)">Nenhum pedido.</td></tr>`;
+    return;
+  }
+
+  // Ordena por data desc
+  const ordenados = [...lista].sort((a, b) => new Date(b.data_pedido) - new Date(a.data_pedido));
+
+  tbody.innerHTML = ordenados.map(p => {
+    const itens = Array.isArray(p.itens)
+      ? p.itens.map(i => i.nome + ' x' + i.qtd).join(', ')
+      : (p.itens || '');
+    return `
+      <tr>
+        <td><strong style="font-size:.8rem">#${p.id_pedido}</strong></td>
+        <td>${p.nome_cliente}</td>
+        <td>${p.telefone}</td>
+        <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${itens}">${itens}</td>
+        <td style="font-weight:700;color:var(--cor-primaria)">${formatarMoeda(p.valor_total)}</td>
+        <td>${p.forma_pagamento}</td>
+        <td style="font-size:.78rem;color:var(--cor-cinza)">${formatarData(p.data_pedido)}</td>
+        <td><span class="badge ${BADGES_STATUS[p.status] || 'badge-novo'}">${p.status}</span></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-secundario btn-sm" onclick="verDetalhe('${p.id_pedido}')">👁️</button>
+          <select class="filtro-select" style="font-size:.75rem;padding:.2rem .4rem"
+            onchange="mudarStatus('${p.id_pedido}', this.value)">
+            <option value="">Status...</option>
+            <option>Novo</option>
+            <option>Preparando</option>
+            <option>Saiu para entrega</option>
+            <option>Entregue</option>
+            <option>Cancelado</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filtrarPedidos() {
+  const status = document.getElementById('filtro-status-pedido').value;
+  const lista  = status ? todosPedidos.filter(p => p.status === status) : todosPedidos;
+  renderizarTabelaPedidos(lista);
+}
+
+function verDetalhe(id) {
+  const p = todosPedidos.find(x => x.id_pedido === id);
+  if (!p) return;
+
+  const itens = Array.isArray(p.itens)
+    ? p.itens.map(i => `<tr><td>${i.nome}</td><td>${i.qtd}</td><td>${formatarMoeda(i.subtotal)}</td></tr>`).join('')
+    : `<tr><td colspan="3">${p.itens}</td></tr>`;
+
+  document.getElementById('conteudo-pedido-detalhe').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div><strong>Pedido:</strong> #${p.id_pedido}</div>
+      <div><strong>Status:</strong> <span class="badge ${BADGES_STATUS[p.status]||'badge-novo'}">${p.status}</span></div>
+      <div><strong>Cliente:</strong> ${p.nome_cliente}</div>
+      <div><strong>Telefone:</strong> ${p.telefone}</div>
+      <div><strong>E-mail:</strong> ${p.email||'—'}</div>
+      <div><strong>Data:</strong> ${formatarData(p.data_pedido)}</div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <strong>Endereço:</strong> ${p.endereco}, ${p.numero} — ${p.bairro} — ${p.cidade}
+      ${p.complemento ? '(' + p.complemento + ')' : ''} — CEP: ${p.cep||'—'}
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:1rem;font-size:.88rem">
+      <thead><tr style="background:#f0f0f0"><th style="padding:.5rem">Item</th><th>Qtd</th><th>Subtotal</th></tr></thead>
+      <tbody>${itens}</tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem;margin-bottom:.5rem">
+      <span>Total:</span><span style="color:var(--cor-primaria)">${formatarMoeda(p.valor_total)}</span>
+    </div>
+    <p><strong>Pagamento:</strong> ${p.forma_pagamento}${p.troco ? ' — Troco para R$'+p.troco : ''}</p>
+    ${p.observacao ? `<p style="margin-top:.5rem"><strong>Obs:</strong> ${p.observacao}</p>` : ''}
+    <div style="margin-top:1.25rem">
+      <strong>Alterar status:</strong>
+      <select class="filtro-select" onchange="mudarStatus('${p.id_pedido}', this.value)" style="margin-left:.5rem">
+        <option value="">Selecione...</option>
+        <option>Novo</option><option>Preparando</option>
+        <option>Saiu para entrega</option><option>Entregue</option><option>Cancelado</option>
+      </select>
+    </div>
+  `;
+  abrirModal('modal-pedido-detalhe');
+}
+
+async function mudarStatus(id, status) {
+  if (!status) return;
+  const res = await atualizarStatusPedido(id, status);
+  if (res.sucesso) {
+    toast('✅ Status do pedido #' + id + ': ' + status, 'sucesso');
+    // Atualiza local
+    const p = todosPedidos.find(x => x.id_pedido === id);
+    if (p) p.status = status;
+    renderizarTabelaPedidos(todosPedidos);
+    fecharModal('modal-pedido-detalhe');
+  } else {
+    toast(res.msg, 'erro');
+  }
+}
+
+// ====================================================
+// CLIENTES
+// ====================================================
+async function carregarClientesAdmin() {
+  const res = await listarClientesAdmin();
+  if (!res.sucesso) { toast(res.msg, 'erro'); return; }
+  todosClientes = res.clientes || [];
+  renderizarTabelaClientes(todosClientes);
+}
+
+function renderizarTabelaClientes(lista) {
+  const tbody = document.getElementById('tbody-clientes');
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--cor-cinza)">Nenhum cliente.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(c => `
+    <tr>
+      <td><strong>${c.nome}</strong></td>
+      <td>${c.email}</td>
+      <td>${c.telefone}</td>
+      <td>${c.cpf || '—'}</td>
+      <td>${c.cidade || '—'}</td>
+      <td style="font-size:.78rem;color:var(--cor-cinza)">${c.data_cadastro ? formatarData(c.data_cadastro) : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function filtrarClientes(termo) {
+  const lista = todosClientes.filter(c =>
+    c.nome.toLowerCase().includes(termo.toLowerCase()) ||
+    c.email.toLowerCase().includes(termo.toLowerCase()) ||
+    (c.telefone || '').includes(termo)
+  );
+  renderizarTabelaClientes(lista);
+}
+
+// ====================================================
+// DASHBOARD
+// ====================================================
+async function carregarDashboard() {
+  // Garante que os dados estejam carregados
+  if (todosProdutos.length  === 0) await carregarProdutosAdmin();
+  if (todosPedidos.length   === 0) await carregarPedidosAdmin();
+  if (todosClientes.length  === 0) await carregarClientesAdmin();
+
+  const faturamento = todosPedidos
+    .filter(p => p.status !== 'Cancelado')
+    .reduce((s, p) => s + Number(p.valor_total || 0), 0);
+
+  document.getElementById('stat-produtos').textContent    = todosProdutos.length;
+  document.getElementById('stat-pedidos').textContent     = todosPedidos.length;
+  document.getElementById('stat-clientes').textContent    = todosClientes.length;
+  document.getElementById('stat-faturamento').textContent = formatarMoeda(faturamento);
+
+  // Últimos 5 pedidos
+  const ultimos = [...todosPedidos]
+    .sort((a, b) => new Date(b.data_pedido) - new Date(a.data_pedido))
+    .slice(0, 5);
+
+  document.getElementById('ultimos-pedidos').innerHTML = ultimos.length === 0
+    ? '<p style="color:var(--cor-cinza)">Nenhum pedido ainda.</p>'
+    : `<table style="width:100%;font-size:.88rem;border-collapse:collapse">
+        <thead><tr style="background:#f0f0f0">
+          <th style="padding:.5rem;text-align:left">#</th>
+          <th>Cliente</th><th>Total</th><th>Status</th><th>Data</th>
+        </tr></thead>
+        <tbody>${ultimos.map(p => `
+          <tr style="border-bottom:1px solid var(--cor-borda)">
+            <td style="padding:.5rem">#${p.id_pedido}</td>
+            <td>${p.nome_cliente}</td>
+            <td style="font-weight:700;color:var(--cor-primaria)">${formatarMoeda(p.valor_total)}</td>
+            <td><span class="badge ${BADGES_STATUS[p.status]||'badge-novo'}">${p.status}</span></td>
+            <td style="color:var(--cor-cinza);font-size:.78rem">${formatarData(p.data_pedido)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+}
+
+// ====================================================
+// UTILITÁRIOS
+// ====================================================
+function abrirModal(id) { document.getElementById(id).classList.add('aberto'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('aberto'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('aberto'); });
+});
+
+function toast(msg, tipo = 'sucesso') {
+  const container = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + tipo;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+</script>
+</body>
+</html>
+```

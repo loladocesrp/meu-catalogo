@@ -1,0 +1,92 @@
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Login</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    body {
+      background: var(--cor-secundaria);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-box {
+      background: white;
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    }
+    .login-logo {
+      text-align: center;
+      font-size: 3rem;
+      margin-bottom: .5rem;
+    }
+    .login-titulo {
+      text-align: center;
+      font-size: 1.2rem;
+      color: var(--cor-secundaria);
+      font-weight: 700;
+      margin-bottom: 1.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="login-logo">🔐</div>
+    <h1 class="login-titulo">Painel Administrativo</h1>
+
+    <div id="alerta-admin" class="alerta"></div>
+
+    <form onsubmit="fazerLoginAdmin(event)">
+      <div class="form-grupo">
+        <label>Usuário</label>
+        <input type="text" id="adm-usuario" placeholder="admin" required autofocus/>
+      </div>
+      <div class="form-grupo">
+        <label>Senha</label>
+        <input type="password" id="adm-senha" placeholder="••••••••" required/>
+      </div>
+      <button type="submit" class="btn btn-secundario btn-block btn-lg"
+        id="btn-adm-login" data-texto="🔓 Entrar">
+        🔓 Entrar
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:1.25rem;font-size:.85rem">
+      <a href="../index.html" style="color:var(--cor-cinza)">← Voltar ao site</a>
+    </p>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    // Redireciona se já estiver logado
+    if (adminLogado()) window.location.href = 'painel.html';
+
+    async function fazerLoginAdmin(e) {
+      e.preventDefault();
+      const usuario = document.getElementById('adm-usuario').value;
+      const senha   = document.getElementById('adm-senha').value;
+      mostrarCarregando(true, 'btn-adm-login');
+
+      const res = await loginAdmin(usuario, senha);
+      mostrarCarregando(false, 'btn-adm-login');
+
+      if (res.sucesso) {
+        sessionStorage.setItem('adminToken', res.token);
+        sessionStorage.setItem('adminUser',  usuario);
+        window.location.href = 'painel.html';
+      } else {
+        mostrarAlerta(res.msg, 'erro', 'alerta-admin');
+      }
+    }
+  </script>
+</body>
+</html>
+```

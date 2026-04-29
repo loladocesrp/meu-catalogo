@@ -1,0 +1,295 @@
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finalizar Pedido</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<header>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo">🛍️ <span>Minha Loja</span></a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-btn">← Voltar ao catálogo</a>
+    </div>
+  </div>
+</header>
+
+<div style="max-width:900px;margin:2rem auto;padding:0 1rem;display:grid;grid-template-columns:1.4fr 1fr;gap:2rem;align-items:start">
+
+  <!-- FORMULÁRIO -->
+  <div>
+    <h1 style="font-size:1.4rem;color:var(--cor-secundaria);margin-bottom:1.5rem">📋 Dados do Pedido</h1>
+    <div id="alerta-pedido" class="alerta"></div>
+
+    <form onsubmit="enviarFormPedido(event)" id="form-pedido">
+
+      <!-- Login rápido -->
+      <div id="area-login-rapido" style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem">
+        <p style="font-weight:600;margin-bottom:.5rem">💡 Já tem conta? <a href="#" onclick="abrirLoginRapido()">Entrar para preencher automaticamente</a></p>
+        <div id="login-rapido" style="display:none">
+          <div class="form-linha">
+            <div class="form-grupo">
+              <label>E-mail</label>
+              <input type="email" id="lr-email" placeholder="seu@email.com"/>
+            </div>
+            <div class="form-grupo">
+              <label>Senha</label>
+              <input type="password" id="lr-senha" placeholder="••••••"/>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secundario" onclick="loginRapido()">Entrar e preencher</button>
+          <span id="msg-lr" style="font-size:.85rem;margin-left:.75rem;color:var(--cor-erro)"></span>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:1rem;color:var(--cor-secundaria)">👤 Seus Dados</h3>
+
+      <div class="form-grupo">
+        <label>Nome completo *</label>
+        <input type="text" id="ped-nome" required placeholder="Seu nome"/>
+      </div>
+      <div class="form-linha">
+        <div class="form-grupo">
+          <label>Telefone / WhatsApp *</label>
+          <input type="tel" id="ped-telefone" required placeholder="(11) 99999-9999"/>
+        </div>
+        <div class="form-grupo">
+          <label>E-mail</label>
+          <input type="email" id="ped-email" placeholder="seu@email.com"/>
+        </div>
+      </div>
+
+      <h3 style="margin:1.25rem 0 1rem;color:var(--cor-secundaria)">📍 Endereço de Entrega</h3>
+
+      <div class="form-linha">
+        <div class="form-grupo">
+          <label>CEP</label>
+          <input type="text" id="ped-cep" placeholder="00000-000" onblur="buscarCEPPedido()"/>
+        </div>
+        <div class="form-grupo">
+          <label>Número *</label>
+          <input type="text" id="ped-numero" required placeholder="123"/>
+        </div>
+      </div>
+      <div class="form-grupo">
+        <label>Endereço *</label>
+        <input type="text" id="ped-endereco" required placeholder="Rua, Avenida..."/>
+      </div>
+      <div class="form-linha">
+        <div class="form-grupo">
+          <label>Bairro *</label>
+          <input type="text" id="ped-bairro" required placeholder="Bairro"/>
+        </div>
+        <div class="form-grupo">
+          <label>Cidade *</label>
+          <input type="text" id="ped-cidade" required placeholder="Sua cidade"/>
+        </div>
+      </div>
+      <div class="form-grupo">
+        <label>Complemento</label>
+        <input type="text" id="ped-complemento" placeholder="Apto, bloco, referência..."/>
+      </div>
+
+      <h3 style="margin:1.25rem 0 1rem;color:var(--cor-secundaria)">💳 Pagamento</h3>
+
+      <div class="form-grupo">
+        <label>Forma de Pagamento *</label>
+        <select id="ped-pagamento" required onchange="mostrarTroco()">
+          <option value="">Selecione...</option>
+          <option value="Dinheiro">💵 Dinheiro</option>
+          <option value="Pix">📱 Pix</option>
+          <option value="Cartão de Débito">💳 Cartão de Débito</option>
+          <option value="Cartão de Crédito">💳 Cartão de Crédito</option>
+        </select>
+      </div>
+      <div class="form-grupo" id="campo-troco" style="display:none">
+        <label>Troco para quanto?</label>
+        <input type="number" id="ped-troco" placeholder="Ex: 50.00" min="0" step="0.01"/>
+      </div>
+
+      <div class="form-grupo">
+        <label>Observações</label>
+        <textarea id="ped-obs" placeholder="Sem cebola, ponto de carne, etc..."></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primario btn-block btn-lg" id="btn-enviar-pedido" data-texto="✅ Confirmar Pedido">
+        ✅ Confirmar Pedido
+      </button>
+    </form>
+  </div>
+
+  <!-- RESUMO DO PEDIDO -->
+  <div style="position:sticky;top:80px">
+    <div style="background:white;border-radius:var(--radius);box-shadow:var(--sombra);padding:1.5rem">
+      <h3 style="margin-bottom:1rem;color:var(--cor-secundaria)">🛒 Resumo do Pedido</h3>
+      <div id="resumo-itens">
+        <!-- preenchido via JS -->
+      </div>
+      <hr style="margin:1rem 0;border-color:var(--cor-borda)"/>
+      <div style="display:flex;justify-content:space-between;font-size:1.1rem;font-weight:700">
+        <span>Total:</span>
+        <span id="resumo-total" style="color:var(--cor-primaria)">R$ 0,00</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PEDIDO CONFIRMADO -->
+<div class="modal-overlay" id="modal-confirmado">
+  <div class="modal">
+    <div class="modal-corpo" style="text-align:center;padding:2.5rem">
+      <div style="font-size:4rem;margin-bottom:1rem">🎉</div>
+      <h2 style="color:var(--cor-secundaria);margin-bottom:.75rem">Pedido Confirmado!</h2>
+      <p style="color:var(--cor-cinza);margin-bottom:.5rem">Número do pedido:</p>
+      <p style="font-size:1.5rem;font-weight:700;color:var(--cor-primaria)" id="num-pedido-confirmado"></p>
+      <p style="color:var(--cor-cinza);margin:1rem 0">Em breve entraremos em contato!</p>
+      <a href="index.html" class="btn btn-primario btn-lg">← Voltar ao catálogo</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="js/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  preencherResumo();
+  preencherDadosCliente();
+});
+
+function preencherResumo() {
+  const carrinho = getCarrinho();
+  const el = document.getElementById('resumo-itens');
+
+  if (carrinho.length === 0) {
+    el.innerHTML = '<p style="color:var(--cor-cinza)">Carrinho vazio. <a href="index.html">Voltar</a></p>';
+    return;
+  }
+
+  el.innerHTML = carrinho.map(i => `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;gap:.5rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <img src="${i.foto || ''}" style="width:40px;height:40px;object-fit:cover;border-radius:6px" onerror="this.style.display='none'"/>
+        <div>
+          <p style="font-weight:600;font-size:.88rem">${i.nome}</p>
+          <p style="font-size:.78rem;color:var(--cor-cinza)">${formatarMoeda(i.preco)} × ${i.qtd}</p>
+        </div>
+      </div>
+      <span style="font-weight:700;white-space:nowrap">${formatarMoeda(i.subtotal)}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('resumo-total').textContent = formatarMoeda(totalCarrinho());
+}
+
+function preencherDadosCliente() {
+  const c = getClienteLogado();
+  if (!c) return;
+  document.getElementById('ped-nome').value      = c.nome     || '';
+  document.getElementById('ped-email').value     = c.email    || '';
+  document.getElementById('ped-telefone').value  = c.telefone || '';
+  document.getElementById('ped-cep').value       = c.cep      || '';
+  document.getElementById('ped-endereco').value  = c.endereco || '';
+  document.getElementById('ped-numero').value    = c.numero   || '';
+  document.getElementById('ped-bairro').value    = c.bairro   || '';
+  document.getElementById('ped-cidade').value    = c.cidade   || '';
+  document.getElementById('area-login-rapido').style.display = 'none';
+}
+
+function abrirLoginRapido() {
+  const lr = document.getElementById('login-rapido');
+  lr.style.display = lr.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loginRapido() {
+  const email = document.getElementById('lr-email').value;
+  const senha = document.getElementById('lr-senha').value;
+  const msg   = document.getElementById('msg-lr');
+  msg.textContent = 'Aguarde...';
+
+  const res = await loginCliente(email, senha);
+  if (res.sucesso) {
+    localStorage.setItem('clienteToken', res.token);
+    localStorage.setItem('clienteDados', JSON.stringify(res.cliente));
+    preencherDadosCliente();
+    msg.textContent = '';
+  } else {
+    msg.textContent = res.msg;
+  }
+}
+
+function mostrarTroco() {
+  const pag = document.getElementById('ped-pagamento').value;
+  document.getElementById('campo-troco').style.display = pag === 'Dinheiro' ? 'block' : 'none';
+}
+
+async function buscarCEPPedido() {
+  const cep = document.getElementById('ped-cep').value.replace(/\D/g, '');
+  if (cep.length !== 8) return;
+  try {
+    const res  = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+    const data = await res.json();
+    if (!data.erro) {
+      document.getElementById('ped-endereco').value = data.logradouro || '';
+      document.getElementById('ped-bairro').value   = data.bairro     || '';
+      document.getElementById('ped-cidade').value   = data.localidade || '';
+    }
+  } catch(e) {}
+}
+
+async function enviarFormPedido(e) {
+  e.preventDefault();
+  const carrinho = getCarrinho();
+  if (carrinho.length === 0) {
+    mostrarAlerta('Seu carrinho está vazio!', 'erro', 'alerta-pedido');
+    return;
+  }
+
+  mostrarCarregando(true, 'btn-enviar-pedido');
+
+  const dados = {
+    nome:            document.getElementById('ped-nome').value,
+    telefone:        document.getElementById('ped-telefone').value,
+    email:           document.getElementById('ped-email').value,
+    cep:             document.getElementById('ped-cep').value,
+    endereco:        document.getElementById('ped-endereco').value,
+    numero:          document.getElementById('ped-numero').value,
+    bairro:          document.getElementById('ped-bairro').value,
+    cidade:          document.getElementById('ped-cidade').value,
+    complemento:     document.getElementById('ped-complemento').value,
+    forma_pagamento: document.getElementById('ped-pagamento').value,
+    troco:           document.getElementById('ped-troco').value || '',
+    observacao:      document.getElementById('ped-obs').value,
+    itens:           carrinho,
+    valor_total:     totalCarrinho()
+  };
+
+  const res = await enviarPedido(dados);
+  mostrarCarregando(false, 'btn-enviar-pedido');
+
+  if (res.sucesso) {
+    limparCarrinho();
+    document.getElementById('num-pedido-confirmado').textContent = '#' + res.id_pedido;
+    document.getElementById('modal-confirmado').classList.add('aberto');
+  } else {
+    mostrarAlerta('Erro ao enviar pedido: ' + res.msg, 'erro', 'alerta-pedido');
+  }
+}
+
+function toast(msg, tipo = 'sucesso') {
+  const container = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + tipo;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+</script>
+</body>
+</html>
+```

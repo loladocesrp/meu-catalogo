@@ -1,0 +1,705 @@
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Minha Loja — Catálogo</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo">🛍️ <span>Minha Loja</span></a>
+
+    <div class="nav-links">
+      <!-- Botões que mudam conforme login -->
+      <div id="nav-visitante">
+        <a href="#" onclick="abrirModal('modal-login')" class="nav-btn">🔑 Entrar</a>
+        <a href="#" onclick="abrirModal('modal-cadastro')" class="nav-btn nav-btn-destaque">📝 Cadastrar</a>
+      </div>
+      <div id="nav-cliente" style="display:none; display:flex; align-items:center; gap:.5rem;">
+        <span id="nav-nome-cliente" style="color:rgba(255,255,255,.8); font-size:.85rem;"></span>
+        <a href="#" onclick="abrirModal('modal-meus-pedidos')" class="nav-btn">📦 Meus Pedidos</a>
+        <a href="#" onclick="abrirModal('modal-meu-perfil')" class="nav-btn">👤 Meu Perfil</a>
+        <button class="nav-btn" onclick="clienteLogout()">Sair</button>
+      </div>
+      <div class="carrinho-wrapper">
+        <button class="nav-btn" onclick="toggleCarrinho()">🛒 Carrinho
+          <span class="carrinho-badge">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== SPINNER ===== -->
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner"></div>
+  <p>Carregando produtos...</p>
+</div>
+
+<!-- ===== BUSCA E FILTROS ===== -->
+<div class="busca-container">
+  <input type="search" class="busca-input" id="busca"
+    placeholder="🔍 Buscar produtos..." oninput="filtrarProdutos()"/>
+  <select class="filtro-select" id="filtro-categoria" onchange="filtrarProdutos()">
+    <option value="">Todas as categorias</option>
+  </select>
+  <select class="filtro-select" id="filtro-ordem" onchange="filtrarProdutos()">
+    <option value="">Ordenar por</option>
+    <option value="menor">Menor preço</option>
+    <option value="maior">Maior preço</option>
+    <option value="az">A → Z</option>
+  </select>
+</div>
+
+<!-- ===== GRADE DE PRODUTOS ===== -->
+<p class="secao-titulo" id="secao-titulo">Todos os Produtos</p>
+<div class="produtos-grade" id="produtos-grade">
+  <!-- preenchido via JS -->
+</div>
+
+<!-- ===== CARRINHO LATERAL ===== -->
+<div class="carrinho-drawer" id="carrinho-drawer">
+  <div class="carrinho-header">
+    <h3>🛒 Carrinho</h3>
+    <button class="modal-fechar" onclick="toggleCarrinho()">×</button>
+  </div>
+  <div class="carrinho-itens" id="carrinho-itens">
+    <div class="vazio"><div class="vazio-icone">🛒</div><p>Carrinho vazio</p></div>
+  </div>
+  <div class="carrinho-footer">
+    <div class="carrinho-total">
+      <span>Total:</span>
+      <span id="carrinho-total-valor">R$ 0,00</span>
+    </div>
+    <button class="btn btn-primario btn-block btn-lg" onclick="irParaPedido()">
+      Finalizar Pedido →
+    </button>
+    <button class="btn btn-outline btn-block" style="margin-top:.5rem"
+      onclick="limparCarrinho(); renderizarCarrinho()">
+      Limpar carrinho
+    </button>
+  </div>
+</div>
+<div id="carrinho-backdrop" onclick="toggleCarrinho()"
+  style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1400;"></div>
+
+<!-- ===== MODAL: DETALHE DO PRODUTO ===== -->
+<div class="modal-overlay" id="modal-produto">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <h2 id="modal-produto-nome">Produto</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-produto')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div class="produto-detalhe">
+        <div>
+          <img id="modal-foto-principal" class="produto-foto-principal" src="" alt=""/>
+          <div class="produto-fotos-thumb" id="modal-thumbs"></div>
+        </div>
+        <div>
+          <p style="font-size:1.5rem;font-weight:700;color:var(--cor-primaria)" id="modal-preco"></p>
+          <p style="color:var(--cor-cinza);margin:.75rem 0;line-height:1.6" id="modal-descricao"></p>
+          <div class="form-grupo" style="margin-bottom:1rem">
+            <label>Quantidade:</label>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <button class="btn btn-outline btn-sm" onclick="alterarQtdModal(-1)">−</button>
+              <span id="modal-qtd" style="font-size:1.1rem;font-weight:600">1</span>
+              <button class="btn btn-outline btn-sm" onclick="alterarQtdModal(1)">+</button>
+            </div>
+          </div>
+          <button class="btn btn-primario btn-block btn-lg" onclick="adicionarModalAoCarrinho()">
+            🛒 Adicionar ao Carrinho
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: LOGIN ===== -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🔑 Entrar na minha conta</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-login')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div id="alerta-login" class="alerta"></div>
+      <form onsubmit="fazerLogin(event)">
+        <div class="form-grupo">
+          <label>E-mail</label>
+          <input type="email" id="login-email" placeholder="seu@email.com" required/>
+        </div>
+        <div class="form-grupo">
+          <label>Senha</label>
+          <input type="password" id="login-senha" placeholder="••••••••" required/>
+        </div>
+        <button type="submit" class="btn btn-primario btn-block btn-lg" id="btn-login" data-texto="Entrar">
+          Entrar
+        </button>
+      </form>
+      <p style="text-align:center;margin-top:1rem;font-size:.9rem">
+        Não tem conta?
+        <a href="#" onclick="fecharModal('modal-login'); abrirModal('modal-cadastro')">Cadastre-se grátis</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: CADASTRO ===== -->
+<div class="modal-overlay" id="modal-cadastro">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h2>📝 Criar minha conta</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-cadastro')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div id="alerta-cadastro" class="alerta"></div>
+      <form onsubmit="fazerCadastro(event)">
+        <div class="form-grupo">
+          <label>Nome completo *</label>
+          <input type="text" id="cad-nome" placeholder="Seu nome" required/>
+        </div>
+        <div class="form-linha">
+          <div class="form-grupo">
+            <label>E-mail *</label>
+            <input type="email" id="cad-email" placeholder="seu@email.com" required/>
+          </div>
+          <div class="form-grupo">
+            <label>Telefone / WhatsApp *</label>
+            <input type="tel" id="cad-telefone" placeholder="(11) 99999-9999" required/>
+          </div>
+        </div>
+        <div class="form-linha">
+          <div class="form-grupo">
+            <label>Senha *</label>
+            <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres" minlength="6" required/>
+          </div>
+          <div class="form-grupo">
+            <label>Confirmar Senha *</label>
+            <input type="password" id="cad-senha2" placeholder="Repita a senha" required/>
+          </div>
+        </div>
+        <div class="form-linha">
+          <div class="form-grupo">
+            <label>CPF</label>
+            <input type="text" id="cad-cpf" placeholder="000.000.000-00"/>
+          </div>
+          <div class="form-grupo">
+            <label>CEP</label>
+            <input type="text" id="cad-cep" placeholder="00000-000" onblur="buscarCEP('cad')"/>
+          </div>
+        </div>
+        <div class="form-linha-3">
+          <div class="form-grupo">
+            <label>Endereço</label>
+            <input type="text" id="cad-endereco" placeholder="Rua, Av..."/>
+          </div>
+          <div class="form-grupo">
+            <label>Número</label>
+            <input type="text" id="cad-numero" placeholder="123"/>
+          </div>
+          <div class="form-grupo">
+            <label>Bairro</label>
+            <input type="text" id="cad-bairro" placeholder="Bairro"/>
+          </div>
+        </div>
+        <div class="form-grupo">
+          <label>Cidade</label>
+          <input type="text" id="cad-cidade" placeholder="Sua cidade"/>
+        </div>
+        <button type="submit" class="btn btn-primario btn-block btn-lg" id="btn-cadastro" data-texto="Criar conta">
+          Criar conta
+        </button>
+      </form>
+      <p style="text-align:center;margin-top:1rem;font-size:.9rem">
+        Já tem conta?
+        <a href="#" onclick="fecharModal('modal-cadastro'); abrirModal('modal-login')">Entrar</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: MEUS PEDIDOS ===== -->
+<div class="modal-overlay" id="modal-meus-pedidos">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <h2>📦 Meus Pedidos</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-meus-pedidos')">×</button>
+    </div>
+    <div class="modal-corpo" id="conteudo-meus-pedidos">
+      <div class="spinner" style="margin:2rem auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: MEU PERFIL ===== -->
+<div class="modal-overlay" id="modal-meu-perfil">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>👤 Meu Perfil</h2>
+      <button class="modal-fechar" onclick="fecharModal('modal-meu-perfil')">×</button>
+    </div>
+    <div class="modal-corpo">
+      <div id="alerta-perfil" class="alerta"></div>
+      <form onsubmit="salvarPerfil(event)">
+        <div class="form-grupo">
+          <label>Nome completo</label>
+          <input type="text" id="perfil-nome" required/>
+        </div>
+        <div class="form-linha">
+          <div class="form-grupo">
+            <label>E-mail</label>
+            <input type="email" id="perfil-email" disabled style="background:#f0f0f0"/>
+          </div>
+          <div class="form-grupo">
+            <label>Telefone</label>
+            <input type="tel" id="perfil-telefone"/>
+          </div>
+        </div>
+        <div class="form-linha">
+          <div class="form-grupo">
+            <label>CPF</label>
+            <input type="text" id="perfil-cpf"/>
+          </div>
+          <div class="form-grupo">
+            <label>CEP</label>
+            <input type="text" id="perfil-cep" onblur="buscarCEP('perfil')"/>
+          </div>
+        </div>
+        <div class="form-linha-3">
+          <div class="form-grupo">
+            <label>Endereço</label>
+            <input type="text" id="perfil-endereco"/>
+          </div>
+          <div class="form-grupo">
+            <label>Número</label>
+            <input type="text" id="perfil-numero"/>
+          </div>
+          <div class="form-grupo">
+            <label>Bairro</label>
+            <input type="text" id="perfil-bairro"/>
+          </div>
+        </div>
+        <div class="form-grupo">
+          <label>Cidade</label>
+          <input type="text" id="perfil-cidade"/>
+        </div>
+        <button type="submit" class="btn btn-primario btn-block" id="btn-perfil" data-texto="Salvar alterações">
+          Salvar alterações
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast-container" id="toasts"></div>
+
+<script src="js/api.js"></script>
+<script>
+// ====================================================
+// VARIÁVEIS GLOBAIS
+// ====================================================
+let produtosTodos  = [];
+let produtoAtual   = null;
+let qtdModal       = 1;
+
+// ====================================================
+// INICIALIZAÇÃO
+// ====================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  verificarSessaoCliente();
+  atualizarBadgeCarrinho();
+  await carregarProdutos();
+  document.getElementById('spinner').style.display = 'none';
+});
+
+// ====================================================
+// PRODUTOS
+// ====================================================
+async function carregarProdutos() {
+  const res = await buscarProdutos();
+  if (!res.sucesso) return;
+  produtosTodos = res.produtos;
+
+  // Popula categorias
+  const sel = document.getElementById('filtro-categoria');
+  const cats = [...new Set(produtosTodos.map(p => p.categoria).filter(Boolean))];
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+
+  renderizarProdutos(produtosTodos);
+}
+
+function renderizarProdutos(lista) {
+  const grade = document.getElementById('produtos-grade');
+  const titulo = document.getElementById('secao-titulo');
+  titulo.textContent = lista.length + ' produto' + (lista.length !== 1 ? 's' : '') + ' encontrado' + (lista.length !== 1 ? 's' : '');
+
+  if (lista.length === 0) {
+    grade.innerHTML = `<div class="vazio" style="grid-column:1/-1">
+      <div class="vazio-icone">😕</div><p>Nenhum produto encontrado.</p></div>`;
+    return;
+  }
+
+  grade.innerHTML = lista.map(p => `
+    <div class="card-produto" onclick="abrirProduto('${p.id}')">
+      <div class="card-img-wrapper">
+        <img src="${p.foto1 || 'https://via.placeholder.com/300x200?text=Sem+foto'}" alt="${p.nome}" loading="lazy"/>
+        ${p.categoria ? `<span class="card-badge">${p.categoria}</span>` : ''}
+      </div>
+      <div class="card-corpo">
+        <p class="card-nome">${p.nome}</p>
+        <p class="card-desc">${p.descricao || ''}</p>
+        <p class="card-preco">${formatarMoeda(p.preco)}</p>
+        <button class="btn-adicionar" onclick="event.stopPropagation(); adicionarRapido('${p.id}')">
+          🛒 Adicionar
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filtrarProdutos() {
+  const termo     = document.getElementById('busca').value.toLowerCase();
+  const categoria = document.getElementById('filtro-categoria').value;
+  const ordem     = document.getElementById('filtro-ordem').value;
+
+  let lista = produtosTodos.filter(p => {
+    const matchTermo = p.nome.toLowerCase().includes(termo) ||
+                       (p.descricao || '').toLowerCase().includes(termo);
+    const matchCat   = !categoria || p.categoria === categoria;
+    return matchTermo && matchCat;
+  });
+
+  if (ordem === 'menor') lista.sort((a, b) => a.preco - b.preco);
+  else if (ordem === 'maior') lista.sort((a, b) => b.preco - a.preco);
+  else if (ordem === 'az') lista.sort((a, b) => a.nome.localeCompare(b.nome));
+
+  renderizarProdutos(lista);
+}
+
+// ====================================================
+// DETALHE DO PRODUTO
+// ====================================================
+function abrirProduto(id) {
+  produtoAtual = produtosTodos.find(p => p.id === id);
+  if (!produtoAtual) return;
+  qtdModal = 1;
+
+  document.getElementById('modal-produto-nome').textContent = produtoAtual.nome;
+  document.getElementById('modal-preco').textContent        = formatarMoeda(produtoAtual.preco);
+  document.getElementById('modal-descricao').textContent    = produtoAtual.descricao || '';
+  document.getElementById('modal-qtd').textContent          = 1;
+
+  const fotos = [produtoAtual.foto1, produtoAtual.foto2, produtoAtual.foto3].filter(Boolean);
+  const principal = document.getElementById('modal-foto-principal');
+  principal.src = fotos[0] || 'https://via.placeholder.com/600x400?text=Sem+foto';
+
+  const thumbs = document.getElementById('modal-thumbs');
+  thumbs.innerHTML = fotos.map((f, i) => `
+    <img src="${f}" class="${i === 0 ? 'ativo' : ''}"
+      onclick="trocarFoto(this, '${f}')"/>
+  `).join('');
+
+  abrirModal('modal-produto');
+}
+
+function trocarFoto(el, src) {
+  document.getElementById('modal-foto-principal').src = src;
+  document.querySelectorAll('#modal-thumbs img').forEach(i => i.classList.remove('ativo'));
+  el.classList.add('ativo');
+}
+
+function alterarQtdModal(delta) {
+  qtdModal = Math.max(1, qtdModal + delta);
+  document.getElementById('modal-qtd').textContent = qtdModal;
+}
+
+function adicionarModalAoCarrinho() {
+  if (!produtoAtual) return;
+  adicionarAoCarrinho(produtoAtual, qtdModal);
+  fecharModal('modal-produto');
+  toast('✅ ' + produtoAtual.nome + ' adicionado!', 'sucesso');
+}
+
+function adicionarRapido(id) {
+  const p = produtosTodos.find(x => x.id === id);
+  if (!p) return;
+  adicionarAoCarrinho(p, 1);
+  toast('✅ ' + p.nome + ' adicionado ao carrinho!', 'sucesso');
+}
+
+// ====================================================
+// CARRINHO
+// ====================================================
+function toggleCarrinho() {
+  const drawer   = document.getElementById('carrinho-drawer');
+  const backdrop = document.getElementById('carrinho-backdrop');
+  const aberto   = drawer.classList.toggle('aberto');
+  backdrop.style.display = aberto ? 'block' : 'none';
+  if (aberto) renderizarCarrinho();
+}
+
+function renderizarCarrinho() {
+  const carrinho = getCarrinho();
+  const itensEl  = document.getElementById('carrinho-itens');
+  const totalEl  = document.getElementById('carrinho-total-valor');
+  totalEl.textContent = formatarMoeda(totalCarrinho());
+
+  if (carrinho.length === 0) {
+    itensEl.innerHTML = `<div class="vazio"><div class="vazio-icone">🛒</div><p>Carrinho vazio</p></div>`;
+    return;
+  }
+
+  itensEl.innerHTML = carrinho.map(item => `
+    <div class="carrinho-item">
+      <img src="${item.foto || 'https://via.placeholder.com/60?text=?'}" alt="${item.nome}"/>
+      <div class="carrinho-item-info">
+        <p class="carrinho-item-nome">${item.nome}</p>
+        <p class="carrinho-item-preco">${formatarMoeda(item.subtotal)}</p>
+      </div>
+      <div class="carrinho-qtd">
+        <button onclick="mudarQtdCarrinho('${item.id}', -1)">−</button>
+        <span>${item.qtd}</span>
+        <button onclick="mudarQtdCarrinho('${item.id}', 1)">+</button>
+      </div>
+      <button class="btn btn-perigo btn-sm" onclick="removerDoCarrinho('${item.id}'); renderizarCarrinho()">✕</button>
+    </div>
+  `).join('');
+}
+
+function mudarQtdCarrinho(id, delta) {
+  const carrinho = getCarrinho();
+  const idx = carrinho.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  carrinho[idx].qtd = Math.max(1, carrinho[idx].qtd + delta);
+  carrinho[idx].subtotal = carrinho[idx].qtd * carrinho[idx].preco;
+  salvarCarrinho(carrinho);
+  renderizarCarrinho();
+  document.getElementById('carrinho-total-valor').textContent = formatarMoeda(totalCarrinho());
+}
+
+function irParaPedido() {
+  if (getCarrinho().length === 0) { toast('Carrinho vazio!', 'aviso'); return; }
+  window.location.href = 'pedido.html';
+}
+
+// ====================================================
+// LOGIN CLIENTE
+// ====================================================
+async function fazerLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const senha = document.getElementById('login-senha').value;
+  mostrarCarregando(true, 'btn-login');
+
+  const res = await loginCliente(email, senha);
+  mostrarCarregando(false, 'btn-login');
+
+  if (res.sucesso) {
+    localStorage.setItem('clienteToken', res.token);
+    localStorage.setItem('clienteDados', JSON.stringify(res.cliente));
+    fecharModal('modal-login');
+    verificarSessaoCliente();
+    toast('👋 Olá, ' + res.cliente.nome.split(' ')[0] + '!', 'sucesso');
+  } else {
+    mostrarAlerta(res.msg, 'erro', 'alerta-login');
+  }
+}
+
+// ====================================================
+// CADASTRO CLIENTE
+// ====================================================
+async function fazerCadastro(e) {
+  e.preventDefault();
+  const senha  = document.getElementById('cad-senha').value;
+  const senha2 = document.getElementById('cad-senha2').value;
+
+  if (senha !== senha2) {
+    mostrarAlerta('As senhas não coincidem.', 'erro', 'alerta-cadastro');
+    return;
+  }
+
+  mostrarCarregando(true, 'btn-cadastro');
+  const dados = {
+    nome:     document.getElementById('cad-nome').value,
+    email:    document.getElementById('cad-email').value,
+    senha:    senha,
+    telefone: document.getElementById('cad-telefone').value,
+    cpf:      document.getElementById('cad-cpf').value,
+    cep:      document.getElementById('cad-cep').value,
+    endereco: document.getElementById('cad-endereco').value,
+    numero:   document.getElementById('cad-numero').value,
+    bairro:   document.getElementById('cad-bairro').value,
+    cidade:   document.getElementById('cad-cidade').value
+  };
+
+  const res = await cadastrarCliente(dados);
+  mostrarCarregando(false, 'btn-cadastro');
+
+  if (res.sucesso) {
+    mostrarAlerta(res.msg, 'sucesso', 'alerta-cadastro');
+    setTimeout(() => {
+      fecharModal('modal-cadastro');
+      abrirModal('modal-login');
+    }, 1800);
+  } else {
+    mostrarAlerta(res.msg, 'erro', 'alerta-cadastro');
+  }
+}
+
+// ====================================================
+// PERFIL DO CLIENTE
+// ====================================================
+function abrirMeuPerfil() {
+  const c = getClienteLogado();
+  if (!c) return;
+  document.getElementById('perfil-nome').value     = c.nome     || '';
+  document.getElementById('perfil-email').value    = c.email    || '';
+  document.getElementById('perfil-telefone').value = c.telefone || '';
+  document.getElementById('perfil-cpf').value      = c.cpf      || '';
+  document.getElementById('perfil-cep').value      = c.cep      || '';
+  document.getElementById('perfil-endereco').value = c.endereco || '';
+  document.getElementById('perfil-numero').value   = c.numero   || '';
+  document.getElementById('perfil-bairro').value   = c.bairro   || '';
+  document.getElementById('perfil-cidade').value   = c.cidade   || '';
+}
+
+async function salvarPerfil(e) {
+  e.preventDefault();
+  const c = getClienteLogado();
+  mostrarCarregando(true, 'btn-perfil');
+
+  const dados = {
+    id:       c.id,
+    nome:     document.getElementById('perfil-nome').value,
+    telefone: document.getElementById('perfil-telefone').value,
+    cpf:      document.getElementById('perfil-cpf').value,
+    cep:      document.getElementById('perfil-cep').value,
+    endereco: document.getElementById('perfil-endereco').value,
+    numero:   document.getElementById('perfil-numero').value,
+    bairro:   document.getElementById('perfil-bairro').value,
+    cidade:   document.getElementById('perfil-cidade').value
+  };
+
+  const res = await editarCliente(dados);
+  mostrarCarregando(false, 'btn-perfil');
+
+  if (res.sucesso) {
+    // Atualiza localStorage
+    const novo = { ...c, ...dados };
+    localStorage.setItem('clienteDados', JSON.stringify(novo));
+    mostrarAlerta(res.msg, 'sucesso', 'alerta-perfil');
+  } else {
+    mostrarAlerta(res.msg, 'erro', 'alerta-perfil');
+  }
+}
+
+// ====================================================
+// MEUS PEDIDOS
+// ====================================================
+async function carregarMeusPedidos() {
+  const res = await buscarPedidosCliente();
+  const el  = document.getElementById('conteudo-meus-pedidos');
+
+  if (!res.sucesso || res.pedidos.length === 0) {
+    el.innerHTML = `<div class="vazio"><div class="vazio-icone">📦</div>
+      <p>Você ainda não fez nenhum pedido.</p></div>`;
+    return;
+  }
+
+  const badges = {
+    'Novo':'badge-novo','Preparando':'badge-preparando',
+    'Saiu para entrega':'badge-saiu','Entregue':'badge-entregue','Cancelado':'badge-cancelado'
+  };
+
+  el.innerHTML = res.pedidos.reverse().map(p => {
+    const itens = Array.isArray(p.itens)
+      ? p.itens.map(i => i.nome + ' x' + i.qtd).join(', ')
+      : p.itens;
+    return `
+      <div style="border:1px solid var(--cor-borda);border-radius:var(--radius);padding:1rem;margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+          <strong>#${p.id_pedido}</strong>
+          <span class="badge ${badges[p.status] || 'badge-novo'}">${p.status}</span>
+          <small style="color:var(--cor-cinza)">${formatarData(p.data_pedido)}</small>
+        </div>
+        <p style="margin:.5rem 0;font-size:.88rem;color:var(--cor-cinza)">${itens}</p>
+        <p style="font-weight:700;color:var(--cor-primaria)">${formatarMoeda(p.valor_total)}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+// ====================================================
+// SESSÃO
+// ====================================================
+function verificarSessaoCliente() {
+  const logado = clienteLogado();
+  document.getElementById('nav-visitante').style.display = logado ? 'none' : 'flex';
+  document.getElementById('nav-cliente').style.display   = logado ? 'flex' : 'none';
+  if (logado) {
+    const c = getClienteLogado();
+    document.getElementById('nav-nome-cliente').textContent = '👤 ' + (c.nome || '').split(' ')[0];
+  }
+}
+
+// ====================================================
+// BUSCA DE CEP
+// ====================================================
+async function buscarCEP(prefix) {
+  const cep = document.getElementById(prefix + '-cep').value.replace(/\D/g, '');
+  if (cep.length !== 8) return;
+  try {
+    const res = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+    const data = await res.json();
+    if (!data.erro) {
+      document.getElementById(prefix + '-endereco').value = data.logradouro || '';
+      document.getElementById(prefix + '-bairro').value   = data.bairro     || '';
+      document.getElementById(prefix + '-cidade').value   = data.localidade || '';
+    }
+  } catch(e) {}
+}
+
+// ====================================================
+// MODAIS
+// ====================================================
+function abrirModal(id) {
+  document.getElementById(id).classList.add('aberto');
+  if (id === 'modal-meus-pedidos') carregarMeusPedidos();
+  if (id === 'modal-meu-perfil')   abrirMeuPerfil();
+}
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('aberto');
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('aberto'); });
+});
+
+// ====================================================
+// TOAST
+// ====================================================
+function toast(msg, tipo = 'sucesso') {
+  const container = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + tipo;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+</script>
+</body>
+</html>
+```
+
