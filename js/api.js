@@ -1,5 +1,3 @@
-
-```javascript
 // ============================================================
 // js/api.js — Funções de comunicação com o Google Apps Script
 // ============================================================
@@ -217,4 +215,4 @@ function mostrarCarregando(mostrar, btnId) {
   btn.disabled = mostrar;
   btn.textContent = mostrar ? 'Aguarde...' : btn.dataset.texto;
 }
-```
+
